@@ -33,6 +33,7 @@ st.markdown("""
     div[data-testid="metric-container"] { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 0.5rem; }
     .stAlert { font-size: 0.85rem; }
     textarea { font-family: monospace !important; font-size: 0.8rem !important; }
+    .brand-input { background: #fffbeb; border: 1px solid #fcd34d; border-radius: 6px; padding: 0.3rem 0.6rem; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -41,6 +42,7 @@ st.markdown("""
 # ══════════════════════════════════════════════════════════════════════════════
 
 DEFAULT_FIXED_VALUES = {
+    "Brand":                              "Tonique",           # ← NEW
     "Category":                           "WOMEN > Clothing > T-shirts",
     "Designer Code":                      "TNQO",
     "Supplier":                           "ST-SUP-0097",
@@ -152,6 +154,10 @@ if "sheet_list" not in st.session_state:
 if "shortcodes" not in st.session_state:
     st.session_state.shortcodes = {}
 
+# Migrate: ensure Brand key exists for sessions that pre-date this change
+if "Brand" not in st.session_state.fixed_values:
+    st.session_state.fixed_values["Brand"] = DEFAULT_FIXED_VALUES["Brand"]
+
 # ══════════════════════════════════════════════════════════════════════════════
 # CORE LOGIC (using session state config)
 # ══════════════════════════════════════════════════════════════════════════════
@@ -243,14 +249,23 @@ def make_unique_sku(sku: str, tracker: dict) -> str:
 
 def load_sheet(ws, sheet_name: str = "", sku_tracker: dict = None):
     if sku_tracker is None: sku_tracker = {}
+    fv = st.session_state.fixed_values
+
+    # ── Brand resolution: fixed value overrides sheet detection ──────────────
+    fixed_brand = fv.get("Brand", "").strip()
+
     brand = ""
-    for r in range(1, 11):
-        for c in range(1, 6):
-            cell_val = ws.cell(row=r, column=c).value
-            if cell_val and str(cell_val).strip().lower() == "brand":
-                brand = normalize_brand(clean(ws.cell(row=r, column=c+2).value))
-                break
-        if brand: break
+    if not fixed_brand:
+        # Fall back to reading brand from the sheet header block
+        for r in range(1, 11):
+            for c in range(1, 6):
+                cell_val = ws.cell(row=r, column=c).value
+                if cell_val and str(cell_val).strip().lower() == "brand":
+                    brand = normalize_brand(clean(ws.cell(row=r, column=c+2).value))
+                    break
+            if brand: break
+    else:
+        brand = normalize_brand(fixed_brand)
 
     header_row = -1
     col_map = {}
@@ -279,7 +294,6 @@ def load_sheet(ws, sheet_name: str = "", sku_tracker: dict = None):
 
     rows = []
     current_parent = {}
-    fv = st.session_state.fixed_values
     smap = st.session_state.size_map
 
     for r in ws.iter_rows(min_row=header_row + 1, values_only=True):
@@ -319,7 +333,7 @@ def load_sheet(ws, sheet_name: str = "", sku_tracker: dict = None):
             "Digital Trial Image URL":             "",
             "Digital Model Prompt":                "",
             "Category":                            fv.get("Category", ""),
-            "Brand":                               brand.capitalize() or current_parent.get("brand","").capitalize(),
+            "Brand":                               brand.capitalize(),
             "Designer Code":                       fv.get("Designer Code",""),
             "Supplier":                            fv.get("Supplier",""),
             "Occasions":                           "",
@@ -498,10 +512,27 @@ with tab_run:
 # ── TAB 2: FIXED VALUES ────────────────────────────────────────────────────────
 with tab_fixed:
     st.markdown("These values are written as-is to every output row. Edit directly.")
+
     fv = st.session_state.fixed_values
+
+    # ── Brand gets a prominent, highlighted input at the top ──────────────────
+    st.markdown("**🏢 Brand** — applied to all rows; overrides any brand detected in the sheet")
+    brand_val = st.text_input(
+        "Brand name",
+        value=fv.get("Brand", ""),
+        key="fv_Brand",
+        placeholder="e.g. Tonique",
+    )
+    st.session_state.fixed_values["Brand"] = brand_val
+    if not brand_val.strip():
+        st.warning("⚠️ Brand is empty — brand will be read from each sheet's header row instead.")
+
+    st.markdown("---")
+
+    # ── All other fixed values in a 2-column grid ─────────────────────────────
+    other_keys = [k for k in fv.keys() if k != "Brand"]
     cols = st.columns(2)
-    editable_keys = list(fv.keys())
-    for i, key in enumerate(editable_keys):
+    for i, key in enumerate(other_keys):
         with cols[i % 2]:
             new_val = st.text_input(key, value=fv[key], key=f"fv_{key}")
             st.session_state.fixed_values[key] = new_val
