@@ -10,6 +10,7 @@ import json
 import io
 import openpyxl
 from pathlib import Path
+from logger import loguru
 
 st.set_page_config(
     page_title="Product Data Pipeline",
@@ -271,6 +272,7 @@ def load_sheet(ws, sheet_name: str = "", sku_tracker: dict = None):
     col_map = {}
     for r in range(1, 15):
         row_vals = [clean(ws.cell(row=r, column=c).value) for c in range(1, 25)]
+        logger.info(row_vals)
         if "SKU" in row_vals:
             header_row = r
             for i, val in enumerate(row_vals):
