@@ -10,7 +10,7 @@ import json
 import io
 import openpyxl
 from pathlib import Path
-from logger import loguru
+from loguru import logger
 
 st.set_page_config(
     page_title="Product Data Pipeline",
