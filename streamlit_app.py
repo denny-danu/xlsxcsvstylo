@@ -340,6 +340,7 @@ def load_sheet(ws, sheet_name: str = "", sku_tracker: dict = None):
             "Occasions":                           "",
             "Purchase Type":                       fv.get("Purchase Type",""),
             "Cancelation Terms / Return Policy":   fv.get("Cancelation Terms / Return Policy",""),
+            "Quantity":                            1,
             "Max Cart Quantity":                   fv.get("Max Cart Quantity",""),
             "List Price":                          price,
             "Sell Price":                          price,
