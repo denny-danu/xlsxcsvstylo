@@ -130,7 +130,7 @@ CSV_COLUMNS = [
     "Title", "Description", "SKU Code", "Barcode Number", "Image URL",
     "Digital Trial Image URL", "Digital Model Prompt", "Category", "Brand",
     "Designer Code", "Supplier", "Occasions", "Purchase Type",
-    "Cancelation Terms / Return Policy", "Max Cart Quantity", "List Price",
+    "Cancelation Terms / Return Policy", "Quantity", "Max Cart Quantity", "List Price",
     "Sell Price", "Gender", "Fitting", "Color", "Fabric", "Size",
     "First in First Out", "New Arrival", "Flash Drop", "Limited Edition",
     "Stylo Unique", "Tags", "Supplier Re-Order Threshold Quantity",
